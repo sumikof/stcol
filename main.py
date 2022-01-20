@@ -62,8 +62,8 @@ def make_model(input_shape):
     from tensorflow.keras.layers import TimeDistributed
     from tensorflow.keras.models import Model
     input = Input(input_shape)
-    model = TimeDistributed(Dense(256))(input)
-    model = TimeDistributed(Dense(64))(model)
+    model = TimeDistributed(Dense(1024))(input)
+    model = TimeDistributed(Dense(256))(model)
     model = LSTM(32, return_sequences=False)(model)
     out = Dense(1)(model)
     model = Model(inputs=input, outputs=out)
@@ -75,7 +75,7 @@ def dl(train_size, look_back):
     dm = s3_data_manager.S3DataManager(settings.boto3_config)
     df = dm.download_datafile(key=settings.INDEX_DATA)
     df = dataframe_reshape(df)
-    # df = dataframe_0_1_scaler(df)
+    df = dataframe_0_1_scaler(df)
 
     trainX, trainY, testX, testY = create_train_and_test_dataset(
         dataset=df,
@@ -83,17 +83,28 @@ def dl(train_size, look_back):
         look_back=look_back)
     print(trainX)
     print(trainY)
-#    model = make_model(input_shape=(look_back, testX.shape[2]))
-#    model.summary()
-#    model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
+    model = make_model(input_shape=(look_back, testX.shape[2]))
+    model.summary()
+
+    model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
 
 
 def main():
     dl(**settings.config)
 
 
+def marge_dataset():
+    dm = s3_data_manager.S3DataManager(settings.boto3_config)
+    index_dataset = dm.download_datafile(key=settings.INDEX_DATA)
+    future_dataset = dm.download_datafile(key=settings.FUTURE_DATA)
+    ovretf_dataset = dm.download_datafile(key=settings.OVR_ETF_DATA)
+    import pandas as pd
+
+    df = pd.concat([index_dataset, future_dataset, ovretf_dataset])
+    df = dataframe_reshape(df)
+    return df
+
+
 if __name__ == '__main__':
-    #basicConfig(level=DEBUG)
-    # model = make_model(input_shape=(28, 3))
-    # model.summary()
+    # basicConfig(level=DEBUG)
     main()
