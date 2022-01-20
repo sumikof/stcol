@@ -9,6 +9,7 @@ import s3_data_manager
 import settings
 import symbol
 from learning.dataset import create_train_and_test_dataset
+from learning.dataset import make_result_dataset
 
 logger = getLogger(__name__)
 
@@ -28,11 +29,15 @@ def dataframe_0_1_scaler(dataframe):
     return df
 
 
-def dataframe_reshape(dataframe):
+def dataframe_reshape(dataframe, drop_columns=[], fill_na=0):
     dataframe = dataframe.pivot_table(
         values=[settings.ADJUST_CLOSE], index=['Date'], columns=['Symbol'], aggfunc='sum')
     dataframe.columns = dataframe.columns.droplevel(0)
-    dataframe = dataframe.dropna(subset=dataframe.columns)
+
+    if len(drop_columns) > 0:
+        dataframe = dataframe.drop(drop_columns, axis=1)
+    dataframe = dataframe.fillna(method='ffill')
+    dataframe = dataframe.fillna(fill_na)
     return dataframe
 
 
@@ -73,16 +78,21 @@ def make_model(input_shape):
 
 def dl(train_size, look_back):
     dm = s3_data_manager.S3DataManager(settings.boto3_config)
-    df = dm.download_datafile(key=settings.INDEX_DATA)
+    index_dataset = dm.download_datafile(key=settings.INDEX_DATA)
+    future_dataset = dm.download_datafile(key=settings.FUTURE_DATA)
+    ovretf_dataset = dm.download_datafile(key=settings.OVR_ETF_DATA)
+    import pandas as pd
+
+    df = pd.concat([index_dataset, future_dataset, ovretf_dataset])
     df = dataframe_reshape(df)
     df = dataframe_0_1_scaler(df)
 
-    trainX, trainY, testX, testY = create_train_and_test_dataset(
-        dataset=df,
-        train_size=train_size,
-        look_back=look_back)
-    print(trainX)
-    print(trainY)
+    result_set = make_result_dataset(df, '^N225', [-30], ['n225-30'])
+    input_dataset = df[result_set.isnull().sum(axis=1) == 0]
+    output_dataset = result_set.dropna()
+
+    trainX, trainY, testX, testY = create_train_and_test_dataset(input_dataset, output_dataset, train_size, look_back)
+
     model = make_model(input_shape=(look_back, testX.shape[2]))
     model.summary()
 
@@ -93,18 +103,6 @@ def main():
     dl(**settings.config)
 
 
-def marge_dataset():
-    dm = s3_data_manager.S3DataManager(settings.boto3_config)
-    index_dataset = dm.download_datafile(key=settings.INDEX_DATA)
-    future_dataset = dm.download_datafile(key=settings.FUTURE_DATA)
-    ovretf_dataset = dm.download_datafile(key=settings.OVR_ETF_DATA)
-    import pandas as pd
-
-    df = pd.concat([index_dataset, future_dataset, ovretf_dataset])
-    df = dataframe_reshape(df)
-    return df
-
-
 if __name__ == '__main__':
-    # basicConfig(level=DEBUG)
+    basicConfig(level=DEBUG)
     main()
