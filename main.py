@@ -29,7 +29,7 @@ def dataframe_0_1_scaler(dataframe):
     return df
 
 
-def dataframe_reshape(dataframe, drop_columns=[], fill_na=0):
+def dataframe_reshape(dataframe, drop_columns=[], fill_na=None):
     dataframe = dataframe.pivot_table(
         values=[settings.ADJUST_CLOSE], index=['Date'], columns=['Symbol'], aggfunc='sum')
     dataframe.columns = dataframe.columns.droplevel(0)
@@ -37,15 +37,13 @@ def dataframe_reshape(dataframe, drop_columns=[], fill_na=0):
     if len(drop_columns) > 0:
         dataframe = dataframe.drop(drop_columns, axis=1)
     dataframe = dataframe.fillna(method='ffill')
-    dataframe = dataframe.fillna(fill_na)
+    if fill_na is not None:
+        dataframe = dataframe.fillna(fill_na)
     return dataframe
 
 
 def plot_dataframe(dataframe):
-    plt.figure()
-    #    dataframe.plot()
-    plt.legend(loc='best')
-    ax = dataframe.plot()
+    dataframe.plot()
     plt.show()
 
 
@@ -60,23 +58,25 @@ def download_yfinance(symbols):
     return man.df
 
 
-def make_model(input_shape):
+def make_model(input_shape, output_shape):
     from tensorflow.keras.layers import LSTM
     from tensorflow.keras.layers import Dense
     from tensorflow.keras.layers import Input
+    from tensorflow.keras.layers import Activation
     from tensorflow.keras.layers import TimeDistributed
     from tensorflow.keras.models import Model
     input = Input(input_shape)
-    model = TimeDistributed(Dense(1024))(input)
-    model = TimeDistributed(Dense(256))(model)
-    model = LSTM(32, return_sequences=False)(model)
-    out = Dense(1)(model)
+    model = TimeDistributed(Dense(512))(input)
+    model = LSTM(64, return_sequences=False)(model)
+    model = Dense(32)(model)
+    out = Dense(output_shape, activation="linear")(model)
     model = Model(inputs=input, outputs=out)
-    model.compile(loss='mean_squared_error', optimizer='adam')
+    model.compile(loss='mean_absolute_error', optimizer="sgd")
+    # model.compile(loss='mean_squared_error', optimizer='adam')
     return model
 
 
-def dl(train_size, look_back):
+def dl(train_size, look_back, predict_term):
     dm = s3_data_manager.S3DataManager(settings.boto3_config)
     index_dataset = dm.download_datafile(key=settings.INDEX_DATA)
     future_dataset = dm.download_datafile(key=settings.FUTURE_DATA)
@@ -84,19 +84,29 @@ def dl(train_size, look_back):
     import pandas as pd
 
     df = pd.concat([index_dataset, future_dataset, ovretf_dataset])
-    df = dataframe_reshape(df)
+    df = dataframe_reshape(df, fill_na=0)
     df = dataframe_0_1_scaler(df)
 
-    result_set = make_result_dataset(df, '^N225', [-30], ['n225-30'])
+    result_set = make_result_dataset(df, '^N225', [-predict_term], ['n225-30'])
     input_dataset = df[result_set.isnull().sum(axis=1) == 0]
     output_dataset = result_set.dropna()
+    input_dataset = input_dataset['2006-01-01':]
+    output_dataset = output_dataset['2006-01-01':]
 
     trainX, trainY, testX, testY = create_train_and_test_dataset(input_dataset, output_dataset, train_size, look_back)
 
-    model = make_model(input_shape=(look_back, testX.shape[2]))
+    model = make_model(input_shape=(look_back, testX.shape[2]), output_shape=1)
     model.summary()
 
     model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
+    score = model.evaluate(trainX, trainY, batch_size=1, verbose=2)
+    print(f'score is {score}')
+    preds = model.predict(testX)
+
+    result = pd.concat([pd.DataFrame(preds), pd.DataFrame(testY)], axis=1)
+    result.columns = ['preds', 'test']
+    plot_dataframe(result)
+    print(result)
 
 
 def main():
@@ -104,5 +114,5 @@ def main():
 
 
 if __name__ == '__main__':
-    basicConfig(level=DEBUG)
+    # basicConfig(level=DEBUG)
     main()

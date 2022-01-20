@@ -1,3 +1,4 @@
 
-train_size: 0.67
+train_size: 0.9
 look_back: 30
+predict_term: 10
