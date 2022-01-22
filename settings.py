@@ -14,5 +14,8 @@ DATA_PATH = os.path.join(TOP_DIR, "data")
 FUTURE_DATA = "future.dat"
 INDEX_DATA = "index.dat"
 OVR_ETF_DATA = "ovr_etf.dat"
+BOND_YIELDS_DATA = "bond_yields.dat"
+EXCHANGE_RATE_DATA = 'exchange_rate'
+DOM_STOCK_DATA = 'dom_stock'
 
 ADJUST_CLOSE = 'AdjClose'

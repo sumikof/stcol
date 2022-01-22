@@ -108,3 +108,20 @@ class OvrEtf(enum.Enum):
     VCIT = 'VCIT'
     JNK = 'JNK'
     JETS = 'JETS'
+
+
+class BondYields(enum.Enum):
+    TNX = '^TNX'
+    FVX = '^FVX'
+    TYX = '^TYX'
+
+
+class ExchangeRate(enum.Enum):
+    USD_JPY = 'JPY=X'
+    EUR_USD = 'EURUSD=X'
+    GBP_USD = 'GBPUSD=X'
+    USD_CHF = 'CHF=X'
+    AUD_USD = 'AUDUSD=X'
+    NZD_USD = 'NZDUSD=X'
+    USD_CAD = 'CAD=X'
+    USD_CNH = 'CNH=X'

@@ -76,14 +76,15 @@ def make_model(input_shape, output_shape):
     return model
 
 
-def dl(train_size, look_back, predict_term):
+def setup_input_output_data(predict_term):
     dm = s3_data_manager.S3DataManager(settings.boto3_config)
     index_dataset = dm.download_datafile(key=settings.INDEX_DATA)
     future_dataset = dm.download_datafile(key=settings.FUTURE_DATA)
     ovretf_dataset = dm.download_datafile(key=settings.OVR_ETF_DATA)
-    import pandas as pd
+    bond_dataset = dm.download_datafile(key=settings.BOND_YIELDS_DATA)
+    ex_dataset = dm.download_datafile(key=settings.EXCHANGE_RATE_DATA)
 
-    df = pd.concat([index_dataset, future_dataset, ovretf_dataset])
+    df = pd.concat([index_dataset, future_dataset, ovretf_dataset, bond_dataset, ex_dataset])
     df = dataframe_reshape(df, fill_na=0)
     df = dataframe_0_1_scaler(df)
 
@@ -93,6 +94,10 @@ def dl(train_size, look_back, predict_term):
     input_dataset = input_dataset['2006-01-01':]
     output_dataset = output_dataset['2006-01-01':]
 
+    return input_dataset, output_dataset
+
+
+def fit_and_predict(input_dataset, output_dataset, train_size, look_back):
     trainX, trainY, testX, testY = create_train_and_test_dataset(input_dataset, output_dataset, train_size, look_back)
 
     model = make_model(input_shape=(look_back, testX.shape[2]), output_shape=1)
@@ -109,10 +114,16 @@ def dl(train_size, look_back, predict_term):
     print(result)
 
 
-def main():
-    dl(**settings.config)
+def main(train_size, look_back, predict_term):
+    in_data, out_data = setup_input_output_data(predict_term)
+    dset = pd.concat([in_data, out_data],axis=1)
+    # dset = dset.dropna()
+    print(dset.tail(200))
+    df = dset.corr()
+    print(df)
+    # fit_and_predict(in_data, out_data, train_size, look_back)
 
 
 if __name__ == '__main__':
     # basicConfig(level=DEBUG)
-    main()
+    main(**settings.config)

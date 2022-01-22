@@ -94,12 +94,12 @@ if __name__ == '__main__':
 
     logger.setLevel(DEBUG)
     man = YFinanceManager()
-    man.download_rate_from_symbols(symbol.OvrEtf)
+    man.download_rate_from_symbols(symbol.ExchangeRate)
 
     from s3_data_manager import S3DataManager
 
-    dm = S3DataManager(settings.config)
-    dm.upload_dataframe(dataframe=man.df, key=settings.OVR_ETF_DATA)
+    dm = S3DataManager(settings.boto3_config)
+    dm.upload_dataframe(dataframe=man.df, key=settings.EXCHANGE_RATE_DATA)
 
-    df = dm.download_datafile('ovr_etf.csv')
+    df = dm.download_datafile(settings.EXCHANGE_RATE_DATA)
     print(df.head())
