@@ -60,20 +60,20 @@ def convert_2d_to_3d(in_data):
 
 
 def fit_and_predict(input_dataset, output_dataset, train_size, look_back, model_maker):
-    trainX, trainY, testX, testY = create_train_and_test_dataset(
+    train_x, train_y, test_x, test_y = create_train_and_test_dataset(
         input_dataset, output_dataset, train_size=train_size, look_back=input_dataset.shape[1])
-    trainX = convert_2d_to_3d(trainX)
-    testX = convert_2d_to_3d(testX)
+    train_x = convert_2d_to_3d(train_x)
+    test_x = convert_2d_to_3d(test_x)
 
-    model = model_maker(input_shape=(testX.shape[1], testX.shape[2], 3), output_shape=1)
+    model = model_maker(input_shape=(test_x.shape[1], test_x.shape[2], 3), output_shape=1)
     model.summary()
 
-    model.fit(trainX, trainY, epochs=3, batch_size=1, verbose=2)
-    score = model.evaluate(trainX, trainY, batch_size=1, verbose=2)
+    model.fit(train_x, train_y, epochs=3, batch_size=1, verbose=2)
+    score = model.evaluate(train_x, train_y, batch_size=1, verbose=2)
     print(f'score is {score}')
-    preds = model.predict(testX)
+    preds = model.predict(test_x)
 
-    result = pd.concat([pd.DataFrame(preds), pd.DataFrame(testY)], axis=1)
+    result = pd.concat([pd.DataFrame(preds), pd.DataFrame(test_y)], axis=1)
     result.columns = ['preds', 'test']
     plot_dataframe(result)
     print(result)
