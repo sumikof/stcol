@@ -89,6 +89,17 @@ class Stock(YFinanceManager):
         logger.info("convert_finish output file = {}".format(out_filenm))
 
 
+def download_yfinance(symbols):
+    """
+    :param symbols: download_yfinance(symbol.OvrIndex)
+    :return:
+    """
+    from market import YFinanceManager
+    man = YFinanceManager()
+    man.download_rate_from_symbols(symbols)
+    return man.df
+
+
 if __name__ == '__main__':
     from logging import DEBUG
 

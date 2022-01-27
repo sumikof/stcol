@@ -1,4 +1,4 @@
 
 train_size: 0.9
-look_back: 30
-predict_term: 10
+look_back: 90
+predict_term: 30

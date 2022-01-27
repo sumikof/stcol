@@ -31,3 +31,24 @@ def make_result_dataset(dataset, symbol: str, shift_list: list, columns: list):
     result_set = pd.concat([df.shift(periods=-30), ], axis=1)
     result_set.columns = columns
     return result_set
+
+
+def dataframe_0_1_scaler(dataframe):
+    from sklearn.preprocessing import MinMaxScaler
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    df = pd.DataFrame(scaler.fit_transform(dataframe), columns=dataframe.columns, index=dataframe.index)
+    return df
+
+
+def dataframe_reshape(dataframe, drop_columns=None, fill_na=None):
+    dataframe = dataframe.pivot_table(
+        values=[settings.ADJUST_CLOSE], index=['Date'], columns=['Symbol'], aggfunc='sum')
+    dataframe.columns = dataframe.columns.droplevel(0)
+
+    if drop_columns is not None and len(drop_columns) > 0:
+        dataframe = dataframe.drop(drop_columns, axis=1)
+    dataframe = dataframe.fillna(method='ffill')
+
+    if fill_na is not None:
+        dataframe = dataframe.fillna(fill_na)
+    return dataframe

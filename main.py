@@ -10,6 +10,9 @@ import settings
 import symbol
 from learning.dataset import create_train_and_test_dataset
 from learning.dataset import make_result_dataset
+from learning.dataset import dataframe_reshape
+from learning.dataset import dataframe_0_1_scaler
+from learning.model_util import make_transfer_model
 
 logger = getLogger(__name__)
 
@@ -22,58 +25,9 @@ def update_rate():
     pass
 
 
-def dataframe_0_1_scaler(dataframe):
-    from sklearn.preprocessing import MinMaxScaler
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    df = pd.DataFrame(scaler.fit_transform(dataframe), columns=dataframe.columns, index=dataframe.index)
-    return df
-
-
-def dataframe_reshape(dataframe, drop_columns=[], fill_na=None):
-    dataframe = dataframe.pivot_table(
-        values=[settings.ADJUST_CLOSE], index=['Date'], columns=['Symbol'], aggfunc='sum')
-    dataframe.columns = dataframe.columns.droplevel(0)
-
-    if len(drop_columns) > 0:
-        dataframe = dataframe.drop(drop_columns, axis=1)
-    dataframe = dataframe.fillna(method='ffill')
-    if fill_na is not None:
-        dataframe = dataframe.fillna(fill_na)
-    return dataframe
-
-
 def plot_dataframe(dataframe):
     dataframe.plot()
     plt.show()
-
-
-def download_yfinance(symbols):
-    """
-    :param symbols: download_yfinance(symbol.OvrIndex)
-    :return:
-    """
-    from market import YFinanceManager
-    man = YFinanceManager()
-    man.download_rate_from_symbols(symbols)
-    return man.df
-
-
-def make_model(input_shape, output_shape):
-    from tensorflow.keras.layers import LSTM
-    from tensorflow.keras.layers import Dense
-    from tensorflow.keras.layers import Input
-    from tensorflow.keras.layers import Activation
-    from tensorflow.keras.layers import TimeDistributed
-    from tensorflow.keras.models import Model
-    input = Input(input_shape)
-    model = TimeDistributed(Dense(512))(input)
-    model = LSTM(64, return_sequences=False)(model)
-    model = Dense(32)(model)
-    out = Dense(output_shape, activation="linear")(model)
-    model = Model(inputs=input, outputs=out)
-    model.compile(loss='mean_absolute_error', optimizer="sgd")
-    # model.compile(loss='mean_squared_error', optimizer='adam')
-    return model
 
 
 def setup_input_output_data(predict_term):
@@ -97,13 +51,24 @@ def setup_input_output_data(predict_term):
     return input_dataset, output_dataset
 
 
-def fit_and_predict(input_dataset, output_dataset, train_size, look_back):
-    trainX, trainY, testX, testY = create_train_and_test_dataset(input_dataset, output_dataset, train_size, look_back)
+def convert_2d_to_3d(in_data):
+    import numpy as np
+    in_data_xx = np.dstack([in_data, in_data, in_data])
+    in_data_xx = in_data_xx.reshape(
+        in_data_xx.shape[0], in_data_xx.shape[1], in_data_xx.shape[1], 3)
+    return in_data_xx
 
-    model = make_model(input_shape=(look_back, testX.shape[2]), output_shape=1)
+
+def fit_and_predict(input_dataset, output_dataset, train_size, look_back, model_maker):
+    trainX, trainY, testX, testY = create_train_and_test_dataset(
+        input_dataset, output_dataset, train_size=train_size, look_back=input_dataset.shape[1])
+    trainX = convert_2d_to_3d(trainX)
+    testX = convert_2d_to_3d(testX)
+
+    model = model_maker(input_shape=(testX.shape[1], testX.shape[2], 3), output_shape=1)
     model.summary()
 
-    model.fit(trainX, trainY, epochs=10, batch_size=1, verbose=2)
+    model.fit(trainX, trainY, epochs=3, batch_size=1, verbose=2)
     score = model.evaluate(trainX, trainY, batch_size=1, verbose=2)
     print(f'score is {score}')
     preds = model.predict(testX)
@@ -114,14 +79,18 @@ def fit_and_predict(input_dataset, output_dataset, train_size, look_back):
     print(result)
 
 
+def in_data_corr(in_data, out_data):
+    dset = pd.concat([in_data, out_data], axis=1)
+    df = dset.corr()
+    in_data = in_data[df[df['n225-30'] > 0.8]['n225-30'].index.drop('n225-30')]
+    return in_data
+
+
 def main(train_size, look_back, predict_term):
     in_data, out_data = setup_input_output_data(predict_term)
-    dset = pd.concat([in_data, out_data],axis=1)
-    # dset = dset.dropna()
-    print(dset.tail(200))
-    df = dset.corr()
-    print(df)
-    # fit_and_predict(in_data, out_data, train_size, look_back)
+    # in_data = in_data.rolling(3).mean().dropna()
+    # out_data = out_data.rolling(3).mean().dropna()
+    fit_and_predict(in_data, out_data, train_size, look_back, make_transfer_model)
 
 
 if __name__ == '__main__':
