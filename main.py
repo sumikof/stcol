@@ -12,7 +12,7 @@ from learning.dataset import create_train_and_test_dataset
 from learning.dataset import make_result_dataset
 from learning.dataset import dataframe_reshape
 from learning.dataset import dataframe_0_1_scaler
-from learning.model_util import make_transfer_model
+from learning import model_util
 
 logger = getLogger(__name__)
 
@@ -51,30 +51,31 @@ def setup_input_output_data(predict_term):
     return input_dataset, output_dataset
 
 
-def convert_2d_to_3d(in_data):
-    import numpy as np
-    in_data_xx = np.dstack([in_data, in_data, in_data])
-    in_data_xx = in_data_xx.reshape(
-        in_data_xx.shape[0], in_data_xx.shape[1], in_data_xx.shape[1], 3)
-    return in_data_xx
+def fit_and_predict(
+        input_dataset,
+        output_dataset,
+        train_size,
+        look_back,
+        epochs,
+        batch_size,
+        model_maker):
+    train_x, train_y, test_x, test_y = create_train_and_test_dataset(
+        input_dataset, output_dataset, train_size=train_size, look_back=look_back)
 
-
-def fit_and_predict(input_dataset, output_dataset, train_size, look_back, model_maker):
-    trainX, trainY, testX, testY = create_train_and_test_dataset(
-        input_dataset, output_dataset, train_size=train_size, look_back=input_dataset.shape[1])
-    trainX = convert_2d_to_3d(trainX)
-    testX = convert_2d_to_3d(testX)
-
-    model = model_maker(input_shape=(testX.shape[1], testX.shape[2], 3), output_shape=1)
+    model = model_maker(input_shape=(test_x.shape[1], test_x.shape[2]), output_shape=1)
     model.summary()
 
-    model.fit(trainX, trainY, epochs=3, batch_size=1, verbose=2)
-    score = model.evaluate(trainX, trainY, batch_size=1, verbose=2)
+    model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=2)
+    score = model.evaluate(train_x, train_y, batch_size=batch_size, verbose=2)
     print(f'score is {score}')
-    preds = model.predict(testX)
+    preds = model.predict(test_x)
 
-    result = pd.concat([pd.DataFrame(preds), pd.DataFrame(testY)], axis=1)
-    result.columns = ['preds', 'test']
+    test_y = pd.DataFrame(test_y)
+    real_y = pd.concat([test_y.shift(periods=15), ], axis=1)
+
+    result = pd.concat([pd.DataFrame(preds), test_y, real_y], axis=1)
+    result.columns = ['preds', 'test', '^N225']
+    result = result[result['test'] > 0.000001]
     plot_dataframe(result)
     print(result)
 
@@ -86,11 +87,18 @@ def in_data_corr(in_data, out_data):
     return in_data
 
 
-def main(train_size, look_back, predict_term):
+def main(train_size, look_back, predict_term, epochs, batch_size):
     in_data, out_data = setup_input_output_data(predict_term)
+    in_data = in_data_corr(in_data, out_data)
     # in_data = in_data.rolling(3).mean().dropna()
     # out_data = out_data.rolling(3).mean().dropna()
-    fit_and_predict(in_data, out_data, train_size, look_back, make_transfer_model)
+    fit_and_predict(in_data,
+                    out_data,
+                    train_size,
+                    look_back,
+                    epochs,
+                    batch_size,
+                    model_util.make_model_lstm)
 
 
 if __name__ == '__main__':
