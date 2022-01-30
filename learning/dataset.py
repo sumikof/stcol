@@ -47,7 +47,7 @@ def dataframe_reshape(dataframe, drop_columns=None, fill_na=None):
 
     if drop_columns is not None and len(drop_columns) > 0:
         dataframe = dataframe.drop(drop_columns, axis=1)
-    dataframe = dataframe.fillna(method='ffill')
+    dataframe = dataframe.fillna(method='bfill')
 
     if fill_na is not None:
         dataframe = dataframe.fillna(fill_na)
