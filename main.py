@@ -1,18 +1,15 @@
-from logging import basicConfig
 from logging import getLogger
-from logging import DEBUG
 
 import pandas as pd
 import matplotlib.pyplot as plt
 
 import s3_data_manager
 import settings
-import symbol
 from learning.dataset import create_train_and_test_dataset
 from learning.dataset import make_result_dataset
 from learning.dataset import dataframe_reshape
 from learning.dataset import dataframe_0_1_scaler
-from learning import model_util
+from learning.models.make_model_base import ModelMakerBase
 
 logger = getLogger(__name__)
 
@@ -58,11 +55,11 @@ def fit_and_predict(
         look_back,
         epochs,
         batch_size,
-        model_maker):
+        model_maker: ModelMakerBase):
     train_x, train_y, test_x, test_y = create_train_and_test_dataset(
         input_dataset, output_dataset, train_size=train_size, look_back=look_back)
 
-    model = model_maker(input_shape=(test_x.shape[1], test_x.shape[2]), output_shape=1)
+    model = model_maker.make_model(input_shape=(test_x.shape[1], test_x.shape[2]), output_shape=1)
     model.summary()
 
     model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=2)
@@ -93,13 +90,14 @@ def main(train_size, look_back, predict_term, epochs, batch_size):
     in_data = in_data_corr(in_data, out_data)
     # in_data = in_data.rolling(3).mean().dropna()
     # out_data = out_data.rolling(3).mean().dropna()
+    from learning.models import model_maker
     fit_and_predict(in_data,
                     out_data,
                     train_size,
                     look_back,
                     epochs,
                     batch_size,
-                    model_util.make_model_lstm)
+                    model_maker.ModelMaker())
 
 
 if __name__ == '__main__':
