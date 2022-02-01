@@ -7,13 +7,15 @@ def make_model_lstm(input_shape, output_shape):
     from tensorflow.keras.layers import TimeDistributed
     from tensorflow.keras.models import Model
     input = Input(input_shape)
-    model = TimeDistributed(Dense(128))(input)
-    model = LSTM(64, return_sequences=True)(model)
-#    model = LSTM(64, return_sequences=True)(model)
-    model = LSTM(64, return_sequences=False)(model)
+#    model = TimeDistributed(Dense(128))(input)
+    model = LSTM(512, return_sequences=True)(input)
+    model = LSTM(256, return_sequences=True)(model)
+    model = LSTM(128, return_sequences=False)(model)
     model = Dense(64)(model)
     model = Activation('relu')(model)
-    model = Dense(64)(model)
+    model = Dense(32)(model)
+    model = Activation('relu')(model)
+    model = Dense(16)(model)
 
     out = Dense(output_shape, activation="linear")(model)
     model = Model(inputs=input, outputs=out)

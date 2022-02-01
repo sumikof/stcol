@@ -66,6 +66,7 @@ def fit_and_predict(
     model.summary()
 
     model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=2)
+    model.save('model_dmp')
     score = model.evaluate(train_x, train_y, batch_size=batch_size, verbose=2)
     print(f'score is {score}')
     preds = model.predict(test_x)
