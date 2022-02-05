@@ -101,6 +101,8 @@ def main(train_size, look_back, predict_term, epochs, batch_size):
     )
     in_data = dataset_differ(in_data, 300, 1)
     out_data = dataset_differ(out_data, 300, 1)
+    in_data = dataframe_0_1_scaler(in_data)
+    out_data = dataframe_0_1_scaler(out_data)
     # in_data = in_data_corr(in_data, out_data)
     # in_data = in_data.rolling(3).mean().dropna()
     # out_data = out_data.rolling(3).mean().dropna()
