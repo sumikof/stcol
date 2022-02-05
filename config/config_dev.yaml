@@ -2,5 +2,5 @@
 train_size: 0.9
 look_back: 30
 predict_term: 15
-epochs: 200
+epochs: 5
 batch_size: 10

@@ -3,3 +3,5 @@ venv
 .idea
 .ipynb_checkpoints/
 *.ipynb
+
+model_dmp/
