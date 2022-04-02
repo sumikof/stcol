@@ -1,3 +1,8 @@
 *.pyc
 venv
 .idea
+.ipynb_checkpoints/
+*.ipynb
+__pycache__
+
+model_dmp/

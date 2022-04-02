@@ -14,7 +14,8 @@ def create_train_and_test_dataset(dataset, out_dataset, train_size, look_back):
     i_dataset = dataset.values
     o_dataset = out_dataset.values
     if len(i_dataset) != len(o_dataset):
-        raise RuntimeError()
+        raise RuntimeError(
+            f'in out dataframe length not equal in {len(i_dataset)},out {len(o_dataset)}')
     train_data_size = int(len(dataset) * train_size)
     train, test = i_dataset[0:train_data_size, :], i_dataset[train_data_size:len(i_dataset), :]
     trainX = convert_lookback_dataset(train, look_back)
