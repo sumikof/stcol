@@ -5,4 +5,4 @@ venv
 *.ipynb
 __pycache__
 
-model_dmp/
+learning/model_dmp/
