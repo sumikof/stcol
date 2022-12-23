@@ -1,6 +1,14 @@
 
 train_size: 0.9
-look_back: 30
-predict_term: 15
-epochs: 200
-batch_size: 10
+look_back: 90
+predict_term: 30
+
+db:
+  hostname: 192.168.11.211
+  user: stcol
+  password: stcol
+  db_name: stcol
+
+boto3:
+  endpoint_url: 'http://192.168.11.202'
+  bucket_name: 'my-new-bucket'

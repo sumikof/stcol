@@ -3,7 +3,8 @@ from logging import getLogger
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import s3_data_manager
+import data_connector
+import db
 import settings
 from learning.dataset import create_train_and_test_dataset
 from learning.dataset import make_result_dataset
@@ -27,17 +28,18 @@ def plot_dataframe(dataframe):
     plt.show()
 
 
-def setup_input_output_data(predict_term):
-    dm = s3_data_manager.S3DataManager(settings.boto3_config)
-    index_dataset = dm.download_datafile(key=settings.INDEX_DATA)
-    future_dataset = dm.download_datafile(key=settings.FUTURE_DATA)
-    ovretf_dataset = dm.download_datafile(key=settings.OVR_ETF_DATA)
-    bond_dataset = dm.download_datafile(key=settings.BOND_YIELDS_DATA)
-    ex_dataset = dm.download_datafile(key=settings.EXCHANGE_RATE_DATA)
+def setup_input_output_data(predict_term, data_scaler=None):
+    dm = data_connector.S3DataManager()
+    index_dataset = dm.get_daily_data(model=settings.INDEX_DATA)
+    future_dataset = dm.get_daily_data(model=settings.FUTURE_DATA)
+    ovretf_dataset = dm.get_daily_data(model=settings.OVR_ETF_DATA)
+    bond_dataset = dm.get_daily_data(model=settings.BOND_YIELDS_DATA)
+    ex_dataset = dm.get_daily_data(model=settings.EXCHANGE_RATE_DATA)
 
     df = pd.concat([index_dataset, future_dataset, ovretf_dataset, bond_dataset, ex_dataset])
     df = dataframe_reshape(df, fill_na=0)
-    df = dataframe_0_1_scaler(df)
+    if data_scaler is not None:
+        df = data_scaler(df)
 
     result_set = make_result_dataset(df, '^N225', [-predict_term], ['n225-30'])
     input_dataset = df[result_set.isnull().sum(axis=1) == 0]
@@ -59,25 +61,6 @@ def fit_and_predict(
     train_x, train_y, test_x, test_y = create_train_and_test_dataset(
         input_dataset, output_dataset, train_size=train_size, look_back=look_back)
 
-<<<<<<<<< Temporary merge branch 1
-
-def fit_and_predict(input_dataset, output_dataset, train_size, look_back, model_maker):
-    train_x, train_y, test_x, test_y = create_train_and_test_dataset(
-        input_dataset, output_dataset, train_size=train_size, look_back=input_dataset.shape[1])
-    train_x = convert_2d_to_3d(train_x)
-    test_x = convert_2d_to_3d(test_x)
-
-    model = model_maker(input_shape=(test_x.shape[1], test_x.shape[2], 3), output_shape=1)
-    model.summary()
-
-    model.fit(train_x, train_y, epochs=3, batch_size=1, verbose=2)
-    score = model.evaluate(train_x, train_y, batch_size=1, verbose=2)
-    print(f'score is {score}')
-    preds = model.predict(test_x)
-
-    result = pd.concat([pd.DataFrame(preds), pd.DataFrame(test_y)], axis=1)
-    result.columns = ['preds', 'test']
-=========
     model = model_maker.make_model(input_shape=(test_x.shape[1], test_x.shape[2]), output_shape=1)
     model.summary()
 
@@ -93,7 +76,6 @@ def fit_and_predict(input_dataset, output_dataset, train_size, look_back, model_
     result = pd.concat([pd.DataFrame(preds), test_y, real_y], axis=1)
     result.columns = ['preds', 'test', '^N225']
     result = result[result['test'] > 0.000001]
->>>>>>>>> Temporary merge branch 2
     plot_dataframe(result)
     print(result)
 
@@ -105,11 +87,27 @@ def in_data_corr(in_data, out_data):
     return in_data
 
 
+def dataset_differ(df, out_threshold, mask_value):
+    up_down = pd.concat([df.shift(periods=1), ], axis=1)
+    up_down = ((df * 100) / up_down) - 100
+    # x = b / a
+    # up_down = up_down/df
+    return up_down.mask(up_down.abs() > out_threshold, mask_value).fillna(mask_value)
+
+
 def main(train_size, look_back, predict_term, epochs, batch_size):
-    in_data, out_data = setup_input_output_data(predict_term)
-    in_data = in_data_corr(in_data, out_data)
+    in_data, out_data = setup_input_output_data(
+        predict_term=predict_term
+        # , data_scaler=dataframe_0_1_scaler
+    )
+    in_data = dataset_differ(in_data, 300, 1)
+    out_data = dataset_differ(out_data, 300, 1)
+    in_data = dataframe_0_1_scaler(in_data)
+    out_data = dataframe_0_1_scaler(out_data)
+    # in_data = in_data_corr(in_data, out_data)
     # in_data = in_data.rolling(3).mean().dropna()
     # out_data = out_data.rolling(3).mean().dropna()
+
     from learning.models import model_maker
     fit_and_predict(in_data,
                     out_data,
@@ -121,5 +119,41 @@ def main(train_size, look_back, predict_term, epochs, batch_size):
 
 
 if __name__ == '__main__':
-    # basicConfig(level=DEBUG)
-    main(**settings.config)
+    from logging import basicConfig, INFO
+
+    basicConfig(level=INFO)
+    # main(**settings.config)
+
+    # dm = data_connector.S3DataManager()
+    fdm = data_connector.FileConnector()
+    dm = data_connector.DBConncector()
+    dm.setup()
+
+    datalist = [
+        settings.FUTURE_DATA,
+        settings.INDEX_DATA,
+        settings.OVR_ETF_DATA,
+        settings.BOND_YIELDS_DATA,
+        settings.EXCHANGE_RATE_DATA,
+        settings.DOM_STOCK_DATA,
+    ]
+    for model in datalist:
+        print(f'datafile = {model.filename}')
+        df = fdm.get_daily_data(model=model)
+        # df.to_csv(f'data/{data.obj_key}')
+        # print(df.tail(5))
+        print("store start ")
+        if model.__tablename__ == 'DOM_STOCK':
+            for key in df.index.unique():
+                logger.info(f"store {model.__tablename__} key => {key}")
+                # dm.store_data(df.loc[key], model)
+        else:
+            logger.info(f"store {model.__tablename__}")
+            dm.store_data(df, model)
+        print("finish insert")
+
+    import db
+
+    query = f"select count(1) from {db.model.DateRate.__tablename__}"
+    df = pd.read_sql(query, con=settings.Engine)
+    print(df)

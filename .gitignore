@@ -3,3 +3,6 @@ venv
 .idea
 .ipynb_checkpoints/
 *.ipynb
+__pycache__
+
+learning/model_dmp/

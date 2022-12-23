@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import enum
 
 
@@ -125,3 +126,33 @@ class ExchangeRate(enum.Enum):
     NZD_USD = 'NZDUSD=X'
     USD_CAD = 'CAD=X'
     USD_CNH = 'CNH=X'
+
+
+@dataclass
+class Stock:
+    name: str
+    value: str
+
+    def __init__(self, code, name=''):
+        self.value = code
+        self.name = name
+
+
+class _DomStockBase:
+    _symbols = []
+
+    def __getitem__(self, index):
+        return self.symbols[index]
+
+    def __len__(self):
+        return len(self.symbols)
+
+    @property
+    def symbols(self):
+        if len(self._symbols) == 0:
+            import market.edinet
+            self._symbols = sorted(market.edinet.kabu(), key=lambda x: x.value)
+        return self._symbols
+
+
+DomStock = _DomStockBase()
