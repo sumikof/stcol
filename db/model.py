@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from settings import Base,DATA_PATH
 
 
 class TableBase:
@@ -46,3 +44,8 @@ class ExchangeRate(Base,TableBase):
 class DomStockRate(Base,TableBase):
     __tablename__ = "DOM_STOCK"
     filename = 'dom_stock.csv'
+
+if __name__ == '__main__':
+    dom_stock_rate = DomStockRate()
+    count = dom_stock_rate.query.count()
+    print(count)

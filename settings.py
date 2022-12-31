@@ -1,9 +1,8 @@
 import os
 import yaml
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
-
-from db import model
 
 LOG_FORMAT = '%(asctime)s : %(levelname)s - %(filename)s - %(message)s'
 
@@ -18,28 +17,21 @@ with open(os.path.join(TOP_DIR, 'config', f'secret.yaml')) as yaml_file:
 
 DATA_PATH = os.path.join(TOP_DIR, "data")
 
-DATABASE = 'mysql+pymysql://{}:{}@{}:3306/{}?charset=utf8'.format(
-    config["db"]["user"],
-    config["db"]["password"],
-    config["db"]["hostname"],
-    config["db"]["db_name"]
-)
+DATABASE = '{0[dbtype]}://{0[user]}:{0[password]}@{0[hostname]}:{0[dbport]}/{0[db_name]}'.format(config["db"])
+
 Engine = create_engine(
     DATABASE,
     encoding="utf-8",
     echo=False
 )
-make_session = scoped_session(
+session = scoped_session(
     sessionmaker(
         autocommit=False,
         autoflush=False,
         bind=Engine
     )
 )
+Base = declarative_base()
+Base.query = session.query_property()
 
-FUTURE_DATA = model.FutureRate()
-INDEX_DATA = model.IndexRate()
-OVR_ETF_DATA = model.OvrEtfRate()
-BOND_YIELDS_DATA = model.BondYieldsRate()
-EXCHANGE_RATE_DATA = model.ExchangeRate()
-DOM_STOCK_DATA = model.DomStockRate()
+

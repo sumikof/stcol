@@ -1,37 +1,57 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
+
+import db.model
 from data_connector.connector import Connector
-import db
 import settings
 import pandas as pd
 
 
 class DBConncector(Connector):
 
-    def get_daily_data(self, model, symbols=None,date=None):
-        session = settings.make_session()
-        model_type = type(model)
+    def __init__(self, model):
+        super().__init__(model)
 
-        query = session.query(model_type)
+    def __enter__(self):
+        self.session = settings.session()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    @property
+    def tablename(self):
+        return self.model.__tablename__
+
+    def get_daily_data(self, symbols=None,date=None,count=None):
+        session = settings.session()
+
+        query = self.model.query
         if symbols is not None and len(symbols) != 0:
-            query = query.filter(model_type.Symbol.in_(symbols))
+            query = query.filter(self.model.Symbol.in_(symbols))
 
         if date is not None:
-            query = query.filter(model_type.Date > date)
+            query = query.filter(self.model.Date > date)
 
         df = pd.read_sql(query.statement, session.bind, index_col='Date')
         df = df.drop('Id', axis=1)
         return df
 
     def setup(self):
-        db.model.Base.metadata.create_all(bind=settings.Engine)
+        from db.model import Base
+        Base.metadata.create_all(bind=settings.Engine)
 
-    def store_data(self, df, model):
+    def store_data(self, df):
 
         df.to_sql(
-            model.__tablename__,
+            self.tablename,
             settings.Engine,
             index=True,
             method="multi",
             chunksize=5000,
             if_exists='append')
+
+if __name__ == '__main__':
+    dom_stock_rate = db.model.DomStockRate()
+    count = dom_stock_rate.query.count()
+    print(count)
+

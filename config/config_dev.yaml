@@ -4,11 +4,13 @@ look_back: 90
 predict_term: 30
 
 db:
-  hostname: 192.168.11.211
-  user: stcol
-  password: stcol
+  dbtype: postgresql
+  dbport: 5432
+  hostname: 192.168.11.133
+  user: postgres
+  password: L8qeiWa0A2H6A6lXzzOxbNcL3j0JswlpM31a9UxfWUbsa9VIZU9LXPqDBDcZbJRd
   db_name: stcol
 
 boto3:
-  endpoint_url: 'http://192.168.11.202'
-  bucket_name: 'my-new-bucket'
+  endpoint_url: 'http://192.168.11.131'
+  bucket_name: 'stcol'
