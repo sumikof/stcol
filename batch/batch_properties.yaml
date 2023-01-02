@@ -1,0 +1,4 @@
+appname:
+    command: app.sample
+sample2:
+    command: sample2s

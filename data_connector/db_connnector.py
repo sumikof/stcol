@@ -7,7 +7,7 @@ import settings
 import pandas as pd
 
 
-class DBConncector(Connector):
+class DBConnector(Connector):
 
     def __init__(self, model):
         super().__init__(model)
@@ -22,7 +22,7 @@ class DBConncector(Connector):
     def tablename(self):
         return self.model.__tablename__
 
-    def get_daily_data(self, symbols=None,date=None,count=None):
+    def get_daily_data(self, symbols=None, date=None, count=None):
         session = settings.session()
 
         query = self.model.query
@@ -50,8 +50,8 @@ class DBConncector(Connector):
             chunksize=5000,
             if_exists='append')
 
+
 if __name__ == '__main__':
     dom_stock_rate = db.model.DomStockRate()
     count = dom_stock_rate.query.count()
     print(count)
-

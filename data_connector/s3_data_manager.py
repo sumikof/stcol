@@ -55,6 +55,7 @@ class S3DataManager(Connector):
             if ret:
                 if ret.group(1) > date:
                     return_list.append(obj.key)
+
         return return_list
 
     def get_data(self,key) -> pd.DataFrame:
@@ -85,7 +86,7 @@ def insert_data(date):
 
     model = db.model.DomStockRate
     s3con = S3DataManager(model)
-    dom_stock_table = data_connector.DBConncector(model)
+    dom_stock_table = data_connector.DBConnector(model)
 
     pattern_str = f"{model.__tablename__}/DAILY_([0-9]+)_{model.filename}"
     pattern = re.compile(pattern_str)
