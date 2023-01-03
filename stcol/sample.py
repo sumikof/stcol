@@ -1,4 +1,4 @@
-from db.model import DomStockRate
+from stcol.db.model import DomStockRate
 
 
 def main():

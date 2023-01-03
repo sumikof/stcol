@@ -1,16 +1,14 @@
-import re
-
 import boto3
 from logging import getLogger
 
-import data_connector
-import db.model
+from stcol import data_connector
+import stcol.db.model
 from settings import config, secret
 
 import pandas as pd
 import re
 
-from data_connector.connector import Connector
+from stcol.data_connector.connector import Connector
 
 logger = getLogger(__name__)
 
@@ -84,7 +82,7 @@ def insert_data(date):
     from logging import basicConfig, INFO
     basicConfig(level=INFO)
 
-    model = db.model.DomStockRate
+    model = stcol.db.model.DomStockRate
     s3con = S3DataManager(model)
     dom_stock_table = data_connector.DBConnector(model)
 

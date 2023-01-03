@@ -1,8 +1,5 @@
-import sqlalchemy as sa
-from sqlalchemy.orm import sessionmaker
-
-import db.model
-from data_connector.connector import Connector
+import stcol.db.model
+from stcol.data_connector.connector import Connector
 import settings
 import pandas as pd
 
@@ -37,7 +34,7 @@ class DBConnector(Connector):
         return df
 
     def setup(self):
-        from db.model import Base
+        from stcol.db import Base
         Base.metadata.create_all(bind=settings.Engine)
 
     def store_data(self, df):
@@ -52,6 +49,6 @@ class DBConnector(Connector):
 
 
 if __name__ == '__main__':
-    dom_stock_rate = db.model.DomStockRate()
+    dom_stock_rate = stcol.db.model.DomStockRate()
     count = dom_stock_rate.query.count()
     print(count)

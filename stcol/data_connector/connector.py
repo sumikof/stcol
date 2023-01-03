@@ -1,8 +1,6 @@
 import re
 import operator
 
-import db.model
-
 
 class Connector:
     def __init__(self, model):

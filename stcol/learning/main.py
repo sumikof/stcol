@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import db.model
-from app.learning.dataset import create_train_and_test_dataset
-from app.learning.dataset import make_result_dataset
-from app.learning.dataset import dataframe_reshape
-from app.learning.dataset import dataframe_0_1_scaler
-from app.learning.models.make_model_base import ModelMakerBase
-from data_connector import s3_data_manager
-import settings
+import stcol.db.model
+from stcol.learning.dataset import create_train_and_test_dataset
+from stcol.learning.dataset import make_result_dataset
+from stcol.learning.dataset import dataframe_reshape
+from stcol.learning.dataset import dataframe_0_1_scaler
+from stcol.learning.models.make_model_base import ModelMakerBase
+from stcol.data_connector import s3_data_manager
+
 
 def plot_dataframe(dataframe):
     dataframe.plot()
@@ -16,11 +16,11 @@ def plot_dataframe(dataframe):
 
 
 def setup_input_output_data(predict_term):
-    index_dataset = s3_data_manager.S3DataManager(model=db.model.IndexRate).get_daily_data()
-    future_dataset = s3_data_manager.S3DataManager(model=db.model.FutureRate).get_daily_data()
-    ovretf_dataset = s3_data_manager.S3DataManager(model=db.model.OvrEtfRate).get_daily_data()
-    bond_dataset = s3_data_manager.S3DataManager(model=db.model.BondYieldsRate).get_daily_data()
-    ex_dataset = s3_data_manager.S3DataManager(model=db.model.ExchangeRate).get_daily_data()
+    index_dataset = s3_data_manager.S3DataManager(model=stcol.db.model.IndexRate).get_daily_data()
+    future_dataset = s3_data_manager.S3DataManager(model=stcol.db.model.FutureRate).get_daily_data()
+    ovretf_dataset = s3_data_manager.S3DataManager(model=stcol.db.model.OvrEtfRate).get_daily_data()
+    bond_dataset = s3_data_manager.S3DataManager(model=stcol.db.model.BondYieldsRate).get_daily_data()
+    ex_dataset = s3_data_manager.S3DataManager(model=stcol.db.model.ExchangeRate).get_daily_data()
 
     df = pd.concat([index_dataset, future_dataset, ovretf_dataset, bond_dataset, ex_dataset])
     df = dataframe_reshape(df, fill_na=0)
@@ -77,7 +77,7 @@ def main(train_size, look_back, predict_term, epochs, batch_size):
     in_data = in_data_corr(in_data, out_data)
     # in_data = in_data.rolling(3).mean().dropna()
     # out_data = out_data.rolling(3).mean().dropna()
-    from app.learning.models import model_maker
+    from stcol.learning.models import model_maker
     fit_and_predict(in_data,
                     out_data,
                     train_size,

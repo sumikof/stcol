@@ -5,7 +5,7 @@ import os
 import settings
 import re
 from pathlib import Path
-from data_connector.connector import Connector
+from stcol.data_connector.connector import Connector
 from logging import getLogger
 
 logger = getLogger(__name__)

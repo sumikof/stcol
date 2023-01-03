@@ -1,4 +1,4 @@
-from data_connector import FileConnector
+from stcol.data_connector import FileConnector
 
 
 class RateService:

@@ -69,8 +69,6 @@ def download_rate(symbols, model, data_connector):
     # df = df.loc[df.index.difference(already.set_index('Symbol', append=True).index)].reset_index('Symbol')
     print(df)
 
-    import settings
-
     data_connector.store_data(df, model)
 
     # df = con.get_daily_data(settings.DOM_STOCK_DATA, symbols=[symbol.Stock(8411)], date='>20220302')
@@ -87,7 +85,7 @@ def download_rate(symbols, model, data_connector):
 if __name__ == '__main__':
     from logging import INFO, basicConfig, DEBUG
 
-    import data_connector
+    from stcol import data_connector
     import market.symbol
     import settings
 
