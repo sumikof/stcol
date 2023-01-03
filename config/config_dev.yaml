@@ -8,7 +8,6 @@ db:
   dbport: 5432
   hostname: 192.168.11.133
   user: postgres
-  password: L8qeiWa0A2H6A6lXzzOxbNcL3j0JswlpM31a9UxfWUbsa9VIZU9LXPqDBDcZbJRd
   db_name: stcol
 
 boto3:

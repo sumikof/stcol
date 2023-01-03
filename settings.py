@@ -17,7 +17,10 @@ with open(os.path.join(TOP_DIR, 'config', f'secret.yaml')) as yaml_file:
 
 DATA_PATH = os.path.join(TOP_DIR, "data")
 
-DATABASE = '{0[dbtype]}://{0[user]}:{0[password]}@{0[hostname]}:{0[dbport]}/{0[db_name]}'.format(config["db"])
+DATABASE = (
+    f'{config["db"]["dbtype"]}://{config["db"]["user"]}:{secret["db"]["password"]}@{config["db"]["hostname"]}'
+    f':{config["db"]["dbport"]}/{config["db"]["db_name"]}'
+)
 
 Engine = create_engine(
     DATABASE,
